@@ -3,18 +3,37 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class PuzzlePlayPart : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
+    public PuzzleType puzzleType = PuzzleType.NONE;
+    private Image puzzleImage = default;
     private bool isClicked = false;
     private RectTransform objRect = default;
     private PuzzleInitZone puzzleInitZone = default;
+    private PlayLevel playLevel = default;
     // Start is called before the first frame update
     void Start()
     {
         isClicked = false;
         objRect = gameObject.GetRect();
         puzzleInitZone = transform.parent.gameObject.GetComponentMust<PuzzleInitZone>();
+
+        playLevel = GameManager.Instance.gameObjs[GData.OBJ_NAME_CURRENT_LEVEL].GetComponentMust<PlayLevel>();
+        puzzleImage = gameObject.FindChildObj("PuzzleImage").GetComponentMust<Image>();
+        // 퍼즐 이미지 이름에 따라서 퍼즐의 타입이 정해진다.
+        switch(puzzleImage.sprite.name)
+        {
+            case "Puzzle_BigTriangle1":
+            case "Puzzle_BigTriangle2":
+            puzzleType = PuzzleType.PUZZLE_BIG_TRIANGLE;
+            break;
+
+            default:
+            puzzleType = PuzzleType.NONE;
+            break;
+        }
     }
 
     // Update is called once per frame
@@ -31,6 +50,16 @@ public class PuzzlePlayPart : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     public void OnPointerUp(PointerEventData eventData)
     {
         isClicked = false;
+        // 여기서 레벨이 가지고 있는 퍼즐 리스트를 순회해서 제자리를 찾는다.
+        PuzzleLevelPart closeLvPuzzle = 
+        playLevel.GetCloseSameTypePuzzle(puzzleType, transform.position);
+
+        if(closeLvPuzzle == default || closeLvPuzzle == null)
+        {
+            return;
+        }
+        transform.position = closeLvPuzzle.transform.position;
+        GFunc.Log($"{closeLvPuzzle.name}이 가장 가까이에 있습니다.");
     }
 
     public void OnDrag(PointerEventData eventData)
